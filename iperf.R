@@ -1,4 +1,4 @@
-### make_network_study (dir) create a network_study.csv file in dir based on json files in dir
+p### make_network_study (dir, study_name = "") create a network_study.csv file in dir
 ### location_report (network_study, locations = "all") generate a network report for specified locations
 ### network_report (network_study, locations = "all") generate a network report for specified networks
 ### best_alternatives (network_study, locations = "all") summarize best wired/wifi choices for specified locations
@@ -78,8 +78,9 @@ df_from_jsons <- function (json_file_list = (list_files_with_exts (dir = getwd()
 {
     lapply (json_file_list,
             function (x)
-            {as.data.frame (fromJSON (file = x), stringsAsFactors = FALSE) %>%
-             mutate (file.name = basename (file_path_sans_ext (x)))
+            { fromJSON (file = x) %>%
+              as.data.frame (stringsAsFactors = FALSE) %>%
+              mutate (file.name = basename (file_path_sans_ext (x)))
             }) %>%
     bind_rows ()
 }
