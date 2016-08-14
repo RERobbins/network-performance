@@ -7,7 +7,6 @@
 
 require ("tools")
 require ("rjson")
-require ("plyr")
 require ("dplyr")
 require ("lubridate")
 
@@ -21,7 +20,7 @@ best_alternatives <- function (network_study, locations = "all")
   
     filter (network.data, location %in% locations) %>%
     group_by (location, wifi) %>% 
-    slice(which.max(received.mbps)) %>%
+    slice (which.max(received.mbps)) %>%
     select (-wifi, everything()) %>%
     as.data.frame()
 }
@@ -52,8 +51,8 @@ network_report <- function (network_study, networks = "all")
     else for (network in networks) if (!network %in% valid.networks) stop ("invalid network")
   
     filter (network.data, network %in% networks) %>% 
-        arrange (network, desc(received.mbps)) %>%
-        select (network, location, everything())
+    arrange (network, desc(received.mbps)) %>%
+    select (network, location, everything())
 }
 
 make_network_study <- function (dir = getwd(), study_name = "")
@@ -77,8 +76,10 @@ make_network_study <- function (dir = getwd(), study_name = "")
 
 df_from_jsons <- function (json_file_list = (list_files_with_exts (dir = getwd(), exts = c ("json" , "JSON"))))
 {
-  ldply (json_file_list,
-         function (x) {cbind ("file.name" = basename (file_path_sans_ext (x)),
-                              as.data.frame (fromJSON (file = x)),
-                              stringsAsFactors = FALSE)})
+    lapply (json_file_list,
+            function (x)
+            {as.data.frame (fromJSON (file = x), stringsAsFactors = FALSE) %>%
+             mutate (file.name = basename (file_path_sans_ext (x)))
+            }) %>%
+    bind_rows ()
 }
