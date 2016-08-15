@@ -1,4 +1,4 @@
-p### make_network_study (dir, study_name = "") create a network_study.csv file in dir
+### make_network_study (dir, study_name = "") create a network_study.csv file in dir
 ### location_report (network_study, locations = "all") generate a network report for specified locations
 ### network_report (network_study, locations = "all") generate a network report for specified networks
 ### best_alternatives (network_study, locations = "all") summarize best wired/wifi choices for specified locations
