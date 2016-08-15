@@ -1,33 +1,51 @@
-### make_network_study (dir, study_name = "") create a network_study.csv file in dir
-### location_report (network_study, locations = "all") generate a network report for specified locations
-### network_report (network_study, locations = "all") generate a network report for specified networks
-### best_alternatives (network_study, locations = "all") summarize best wired/wifi choices for specified locations
-### locations (network_study) list all locations in network_study file
-### network (network_study) list all networks in network_study file 
+### make_network_study (dir, study_name = "") create a network_study file in dir
+### location_report (network_study, locations = "all") network report for specified locations
+### network_report  (network_study, networks  = "all") network report for specified networks
+### best_alternatives (network_study, locations = "all") best wired/wifi networks for specified locations
+### locations (network_study) list locations
+### networks  (network_study) list networks
 
 require ("tools")
 require ("rjson")
 require ("dplyr")
 require ("lubridate")
 
-best_alternatives <- function (network_study, locations = "all")
+make_network_study <- function (dir = getwd(), study_name = "")
 {
-    network.data <- read.csv (network_study)
-    valid.locations <- levels (network.data$location)
+    parse.location <- function (string) {substr (string, 1, regexpr ("_", string) - 1)}
+    parse.network  <- function (string) {substr (string, regexpr ("_", string) + 1, nchar (string))}
 
-    if (identical (locations, "all")) locations <- valid.locations
-    else for (location in locations) if (!location %in% valid.locations) stop ("invalid location")
-  
-    filter (network.data, location %in% locations) %>%
-    group_by (location, wifi) %>% 
-    slice (which.max(received.mbps)) %>%
-    select (-wifi, everything()) %>%
-    as.data.frame()
+    df_from_jsons <- function (json_list)
+    {
+        lapply (json_list,
+                function (x)
+                {
+                    fromJSON (file = x) %>%
+                       as.data.frame (stringsAsFactors = FALSE) %>%
+                       mutate (file.name = basename (file_path_sans_ext (x)))
+                }) %>%
+            bind_rows ()
+    }
+
+    if (study_name == "")
+        study_name <- sprintf ("%s -- %s network study.csv",
+                               format (Sys.time(), "%Y-%m-%d"), basename (dir))
+
+    study <- df_from_jsons (list_files_with_exts (dir = dir, exts = c ("json", "JSON"))) %>%
+             mutate (location = as.factor (parse.location (file.name)),
+                     network  = as.factor (parse.network  (file.name)),
+                     wifi = grepl ("airport|mesh|GHz|ghz", network),
+                     sent.mbps = round(end.sum_sent.bits_per_second / 1e6, digits=2),
+                     received.mbps = round(end.sum_received.bits_per_second / 1e6, digits=2),
+                     timestamp = strftime (with_tz (dmy_hms (start.timestamp.time), tz = "America/Chicago"),
+                                           format = "%Y-%m-%d %R",
+                                           usetz = TRUE)) %>%
+             arrange (desc(received.mbps)) %>%
+             select (location, network, wifi, sent.mbps, received.mbps, timestamp)
+
+    write.csv (file=file.path (dir, study_name), study, row.names = FALSE)
+    study
 }
-
-locations <- function (network_study) {levels (read.csv(network_study)$location)}
-
-networks <- function (network_study) {levels (read.csv(network_study)$network)}
 
 location_report <- function (network_study, locations = "all")
 {
@@ -55,32 +73,20 @@ network_report <- function (network_study, networks = "all")
     select (network, location, everything())
 }
 
-make_network_study <- function (dir = getwd(), study_name = "")
+best_alternatives <- function (network_study, locations = "all")
 {
-    study <- df_from_jsons (list_files_with_exts (dir = dir, exts = c ("json", "JSON"))) %>%
-        mutate (location = as.factor (substr (file.name, 1, regexpr ("_", file.name) - 1)),
-                network = as.factor (substr (file.name,  regexpr ("_", file.name) + 1, nchar (file.name))),
-                wifi = grepl ("airport|mesh|GHz|ghz", network),
-                sent.mbps = round(end.sum_sent.bits_per_second / 1e6, digits=2),
-                received.mbps = round(end.sum_received.bits_per_second / 1e6, digits=2),
-                timestamp = strftime (with_tz (dmy_hms (start.timestamp.time), tz = "America/Chicago"),
-                                      format = "%Y-%m-%d %R",
-                                      usetz = TRUE)) %>%
-        arrange (desc(received.mbps)) %>%
-        select (location, network, wifi, sent.mbps, received.mbps, timestamp)
-    
-    if (study_name == "") study_name <- sprintf ("%s -- %s network study.csv" , format (Sys.time(), "%Y-%m-%d"), basename (dir))
-    write.csv (file=file.path (dir, study_name), study, row.names = FALSE)
-    study
+    network.data <- read.csv (network_study)
+    valid.locations <- levels (network.data$location)
+
+    if (identical (locations, "all")) locations <- valid.locations
+    else for (location in locations) if (!location %in% valid.locations) stop ("invalid location")
+  
+    filter (network.data, location %in% locations) %>%
+    group_by (location, wifi) %>% 
+    slice (which.max (received.mbps)) %>%
+    select (-wifi, everything()) %>%
+    as.data.frame ()
 }
 
-df_from_jsons <- function (json_file_list = (list_files_with_exts (dir = getwd(), exts = c ("json" , "JSON"))))
-{
-    lapply (json_file_list,
-            function (x)
-            { fromJSON (file = x) %>%
-              as.data.frame (stringsAsFactors = FALSE) %>%
-              mutate (file.name = basename (file_path_sans_ext (x)))
-            }) %>%
-    bind_rows ()
-}
+locations <- function (network_study) {levels (read.csv (network_study)$location)}
+networks <-  function (network_study) {levels (read.csv (network_study)$network)}
