@@ -22,7 +22,7 @@ make_network_study <- function (dir = getwd(), study_name = "")
                        as.data.frame (stringsAsFactors = FALSE) %>%
                        mutate (file.name = basename (file_path_sans_ext (x)))
                 }) %>%
-            bind_rows ()
+        bind_rows ()
     }
 
     if (study_name == "")
@@ -47,9 +47,9 @@ make_network_study <- function (dir = getwd(), study_name = "")
 
 location_report <- function (network_study, ...) {UseMethod ("location_report")}
 
-location_report.character <- function (network_study, locations = "all")
+location_report.character <- function (network_study, ...)
 {
-    location_report.data.frame (read.csv (network_study), locations)
+    location_report.data.frame (read.csv (network_study), ...)
 }
 
 location_report.data.frame <- function (network.data, locations = "all")
@@ -66,9 +66,9 @@ location_report.data.frame <- function (network.data, locations = "all")
 
 network_report <- function (network_study, ...) {UseMethod ("network_report")}
 
-network_report.character <- function (network_study, locations = "all")
+network_report.character <- function (network_study, ...)
 {
-    network_report.data.frame (read.csv (network_study), locations)
+    network_report.data.frame (read.csv (network_study), ...)
 }
 
 network_report.data.frame <- function (network.data, networks = "all")
@@ -85,9 +85,9 @@ network_report.data.frame <- function (network.data, networks = "all")
 
 best_alternatives <- function (network_study, ...) {UseMethod ("best_alternatives")}
 
-best_alternatives.character <- function (network_study, locations = "all")
+best_alternatives.character <- function (network_study, ...)
 {
-    best_alternatives.data.frame (read.csv (network_study), locations)
+    best_alternatives.data.frame (read.csv (network_study), ...)
 }
 
 best_alternatives.data.frame <- function (network.data, locations = "all")
