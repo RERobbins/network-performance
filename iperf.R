@@ -10,6 +10,7 @@ require ("rjson")
 require ("dplyr")
 require ("lubridate")
 require ("stringr")
+require ("ggplot2")
 
 make_network_study <- function (dir = getwd(), study_name = "")
 {
@@ -111,3 +112,16 @@ locations.data.frame <- function (network_study) {levels (network_study$location
 networks <- function (network_study) {UseMethod ("networks")}
 networks.character  <-  function (network_study) {levels (read.csv (network_study)$network)}
 networks.data.frame <-  function (network_study) {levels (network_study$network)}
+
+make_iPerf_plot <- function (dataset, title = NULL)
+{
+  ggplot (dataset, aes (timestamp, received.mbps)) + 
+    geom_point () +
+    labs (x = "Date", y = "iPerf3 received in Mbit/s", title = title) +
+    geom_smooth (se = TRUE)
+}
+
+make_iPerf_plot_file <- function (plot)
+{
+  ggsave ("iperf.png")
+}
