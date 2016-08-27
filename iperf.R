@@ -1,4 +1,4 @@
-### make_network_study (dir, study_name = "") create a network_study file in dir
+### make_network_study (source, study_name = "") create a network_study file in dir or from csv file
 ### location_report (network_study, locations = "all") network report for specified locations
 ### network_report  (network_study, networks  = "all") network report for specified networks
 ### best_alternatives (network_study, locations = "all") best wired/wifi networks for specified locations
@@ -12,26 +12,20 @@ require ("lubridate")
 require ("stringr")
 require ("ggplot2")
 
-make_network_study <- function (dir = getwd(), study_name = "")
+make_network_study <- function (source = getwd(), study_name = "")
 {
-    df_from_jsons <- function (json_list)
-    {
-        lapply (json_list,
-                function (x)
-                {
-                    fromJSON (file = x) %>%
-                       as.data.frame (stringsAsFactors = FALSE) %>%
-                       mutate (file.name = basename (file_path_sans_ext (x)))
-                }) %>%
-        bind_rows ()
-    }
-
+    if (!file.exists (source)) stop ("source does not exist")
+    if (file.info(source)$isdir) 
+        study <- df_from_jsons (list_files_with_exts (dir = source, exts = c ("json", "JSON")))
+    else  
+        study <- read.csv (source)
+      
     if (study_name == "")
         study_name <- sprintf ("%s -- %s network study.csv",
-                               format (Sys.time(), "%Y-%m-%d"), basename (dir))
+                               format (Sys.time(), "%Y-%m-%d"), file_path_sans_ext (basename (source)))
 
-    study <- df_from_jsons (list_files_with_exts (dir = dir, exts = c ("json", "JSON"))) %>%
-             mutate (location = as.factor (word (file.name, 1, sep = "_")),
+    study <- mutate (study, 
+                     location = as.factor (word (file.name, 1, sep = "_")),
                      network  = as.factor (word (file.name, 2, sep = "_")),
                      wifi = grepl ("airport|mesh|GHz|ghz", network),
                      sent.mbps = round(end.sum_sent.bits_per_second / 1e6, digits=2),
@@ -39,10 +33,10 @@ make_network_study <- function (dir = getwd(), study_name = "")
                      timestamp = strftime (with_tz (dmy_hms (start.timestamp.time), tz = "America/Chicago"),
                                            format = "%Y-%m-%d %R",
                                            usetz = TRUE)) %>%
-             arrange (desc(received.mbps)) %>%
-             select (location, network, wifi, sent.mbps, received.mbps, timestamp)
+        arrange (desc(received.mbps)) %>%
+        select (location, network, wifi, sent.mbps, received.mbps, timestamp)
 
-    write.csv (file=file.path (dir, study_name), study, row.names = FALSE)
+    write.csv (file= study_name, study, row.names = FALSE)
     study
 }
 
@@ -115,7 +109,8 @@ networks.data.frame <-  function (network_study) {levels (network_study$network)
 
 make_iPerf_plot <- function (dataset, title = NULL)
 {
-  ggplot (dataset, aes (timestamp, received.mbps)) + 
+    mutate (dataset, timestamp = ymd_hm (timestamp)) %>%
+    ggplot (aes (timestamp, received.mbps)) + 
     geom_point () +
     labs (x = "Date", y = "iPerf3 received in Mbit/s", title = title) +
     geom_smooth (se = TRUE)
@@ -123,5 +118,27 @@ make_iPerf_plot <- function (dataset, title = NULL)
 
 make_iPerf_plot_file <- function (plot)
 {
-  ggsave ("iperf.png")
+  ggsave ("iperf.png", plot)
+}
+
+df_from_jsons <- function (json_list)
+{
+    lapply (json_list,
+            function (x)
+            {
+                rjson::fromJSON (file = x) %>%
+                    as.data.frame (stringsAsFactors = FALSE)
+            }) %>%
+
+    bind_rows () %>%
+    bind_cols (as.data.frame (json_list, stringsAsFactors = FALSE), .) %>%
+    rename (file.name = json_list) %>%
+    mutate (file.name = basename (file.name))
+}
+
+csv_from_jsons <- function (json_list = "", name)
+{
+  if (identical (json_list, ""))  json_list <- list_files_with_exts (dir = getwd(), exts = c ("json", "JSON"))
+  df_from_jsons (json_list) %>%
+        write.csv (file = name, row.names = FALSE)
 }

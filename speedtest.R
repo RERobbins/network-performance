@@ -15,7 +15,7 @@ make_speedtest_dataset <- function (filename)
               upload.speed = upload,
               share.url = share_url) %>%
     
-      drop_na (-share.url) %>%  
+      drop_na (server) %>%  
     
       mutate (start = ymd_hms (start),
               stop = ymd_hms (stop),
@@ -30,27 +30,29 @@ make_speedtest_dataset <- function (filename)
 
 make_download_plot <- function (dataset, title = NULL)
 { 
-    ggplot (dataset, aes (start, download.speed, color = server)) + 
-        geom_point() +
+    filter (dataset, !is.na (download.speed) & download.speed > 0) %>%
+    ggplot (aes (start, download.speed, color = server)) + 
+        geom_point(alpha = .25) +
         labs (x = "Date", y = "Download Speed in Mbit/s", title = title) +
         geom_smooth (se = FALSE)
 }  
   
 make_upload_plot <- function (dataset, title = NULL)
 {
-    ggplot (dataset, aes (start, upload.speed, color = server)) + 
-        geom_point () +
+    filter (dataset, !is.na (upload.speed) & upload.speed > 0) %>%
+    ggplot (aes (start, upload.speed, color = server)) + 
+        geom_point (alpha = .25) +
         labs (x = "Date", y = "Upload Speed in Mbit/s", title = title) +
         geom_smooth (se = FALSE)
 }
 
 make_ping_plot <- function (dataset, title = NULL)
 {
-    ggplot (dataset, aes (start, server.ping.speed, color = server)) + 
-        geom_point () +
+    filter (dataset, !is.na (server.ping.speed) & server.ping.speed > 0) %>%
+    ggplot (aes (start, server.ping.speed, color = server)) + 
+        geom_point (alpha = .25) +
         labs (x = "Date", y = "Ping Response in ms", title = title) +
-        geom_smooth (se = FALSE) +
-        coord_cartesian(ylim = c (0, 200))
+        geom_smooth (se = FALSE)
 }
 
 make_plot_list <- function (dataset, title = NULL) {UseMethod ("make_plot_list")}
