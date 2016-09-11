@@ -36,7 +36,7 @@ make_download_plot <- function (dataset, title = NULL)
         #        geom_point(alpha = .25) +
         labs (x = "Date", y = "Download Speed in Mbit/s", title = title) +
         geom_smooth (se = FALSE) +
-        theme (legend.position = "bottom")
+        theme (legend.position = "bottom", aspect.ratio = 3/6)
 }  
 
 make_upload_plot <- function (dataset, title = NULL)
@@ -46,7 +46,9 @@ make_upload_plot <- function (dataset, title = NULL)
         #        geom_point (alpha = .25) +
         labs (x = "Date", y = "Upload Speed in Mbit/s", title = title) +
         geom_smooth (se = FALSE) +
-        theme (legend.position = "bottom")
+        theme (legend.position = "bottom") +
+        theme (legend.position = "bottom", aspect.ratio = 3/6)
+    
 }
 
 make_ping_plot <- function (dataset, title = NULL)
@@ -56,7 +58,9 @@ make_ping_plot <- function (dataset, title = NULL)
         #        geom_point (alpha = .25) +
         labs (x = "Date", y = "Ping Response in ms", title = title) +
         geom_smooth (se = FALSE) +
-        theme (legend.position = "bottom")
+        theme (legend.position = "bottom") +
+        theme (legend.position = "bottom", aspect.ratio = 3/6)
+    
 }
 
 make_plot_list <- function (dataset, title = NULL) {UseMethod ("make_plot_list")}
