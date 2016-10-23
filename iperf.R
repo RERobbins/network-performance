@@ -12,6 +12,30 @@ require ("lubridate")
 require ("stringr")
 require ("ggplot2")
 
+test <- function (source = getwd(), study_name = "", use.cache = TRUE, cache = "")
+{
+    if (!file.exists (source)) stop ("source does not exist")
+    if (!file.info(source)$isdir) stop ("source must be a directory") 
+
+    ## ADD CODE TO REMOVE TRAILING SLASH FROM SOURCE NAME
+    json_list <- source %>%
+        list.files (recursive = TRUE, full.names = TRUE) %>%
+        unlist () %>%
+        data.frame (file.name = .) %>%
+        filter (file_ext (file.name) %in% c ("json", "JSON"))
+   
+    if (use.cache && identical (cache, ""))
+    {   
+        cache <- list_files_with_exts (source, c ("csv", "CSV")) %>%
+            .[which.max (lapply (., file.mtime))]
+    }           
+
+    ## if csv has length 0 then process jsons as before but recurse etc
+    ## if csv has length 1 then build up frame of files to skip
+
+    print (cache)
+}
+
 make_network_study <- function (source = getwd(), study_name = "")
 {
     if (!file.exists (source)) stop ("source does not exist")
@@ -134,11 +158,4 @@ df_from_jsons <- function (json_list)
     bind_cols (as.data.frame (json_list, stringsAsFactors = FALSE), .) %>%
     rename (file.name = json_list) %>%
     mutate (file.name = basename (file.name))
-}
-
-csv_from_jsons <- function (json_list = "", name)
-{
-  if (identical (json_list, ""))  json_list <- list_files_with_exts (dir = getwd(), exts = c ("json", "JSON"))
-  df_from_jsons (json_list) %>%
-        write.csv (file = name, row.names = FALSE)
 }
